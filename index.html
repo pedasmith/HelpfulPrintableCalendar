@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Title>Calendar</Title>
+        <meta name="author" content="Peter Smith" />
+        <meta name="description" content="Simple Calendar creator" />
+        <style>
+            table, th, td {
+                border-collapse: collapse;
+                font-size: 8pt;
+                height: 18px;
+                empty-cells:hide;
+            }
+            th {
+                border: 1px solid black;
+                background-color: #04AA6D;
+                color: white;
+            }
+            td { 
+                width: 7.69%;
+            }
+            .blankCell  { 
+                background-color: white;
+            }
+            .calendarCell  { 
+                border: 1px solid black;
+                background-color: white;
+            }
+            .dayNameCell  { 
+                border-top: 1px solid black;
+                border-bottom: 1px solid black;
+                border-left: 1px solid black;
+                background-color: white;
+            }
+            .dayNameCell.sat { 
+                font-weight:700;
+            }
+            .dayNameCell.sun { 
+                font-weight:700;
+            }
+            .sat { 
+                border-top: 2px double black;
+                background-color: #CCCCCC;
+            }
+            .sun { 
+                border-bottom: 2px double black;
+                background-color: #CCCCCC;
+            }
+        
+        
+        
+        </style>
+        <script>
+            var UserPreferences ={
+                title: "[[year]]",
+                calendarType: "colyear"
+            };
+            function T(input, prefs)
+            {
+                var output=input.replace("[[year]]", prefs.year);
+                return output;
+            }
+
+            function MakeColYear(block, prefs)
+            {
+                var year = prefs.year;
+                block.innerHTML = "";
+                var tbl = document.createElement ("TABLE");
+                var thead = document.createElement ("THEAD");
+                var tbody = document.createElement ("TBODY");
+
+                var cal = new Date (year, 0, 1); //0==jan and 1==1st (of jan)
+                var ms = cal.getTime();
+                var msPerDay = 24 * 60 * 60 * 1000;
+
+                var row = thead.insertRow();
+                var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                AddMonthName(row, "Day");
+                for (var i=0; i<12; i++)
+                {
+                    AddMonthName(row, monthNames[i]);
+                }
+
+                // Add all of the days
+                var oldM = -1;
+                var firstDayOffset = 0;
+                while (cal.getFullYear()==year)
+                {
+                    var m = cal.getMonth();
+                    var d = cal.getDate();
+                    var dayOfWeek = cal.getDay();
+                    var newMonth = m != oldM;
+                    if (newMonth)
+                    {
+                        firstDayOffset = dayOfWeek;
+                    }
+                    var r = d + firstDayOffset - 1; 
+                    var c = m + 1; // month + name of day
+                    while (tbody.rows.length <= r)
+                    {
+                        tbody.insertRow();
+                    }
+                    var dayrow = tbody.rows[r];
+                    while (dayrow.cells.length < c)
+                    {
+                        var isFirst = dayrow.cells.length == 0;
+                        var blank = dayrow.insertCell();
+                        blank.className= isFirst ? "dayNameCell": "blankCell";
+                        blank.innerText = "";
+                    }
+                    var cell = dayrow.insertCell();
+                    cell.innerText = d;
+                    cell.className = "calendarCell";
+
+                    // Bottom of loop.
+                    oldM = m;
+                    cal.setTime(cal.getTime() + msPerDay);
+                }
+
+                // Add in the days of the week
+                var dayOfWeek = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                for (var i=0; i<tbody.rows.length; i++)
+                {
+                    var day = dayOfWeek[i%dayOfWeek.length];
+                    var cells = tbody.rows[i].cells
+                    cells[0].innerText = day;
+
+                    // If it's Sat or Sun, mark all cells in the row
+                    var xclass = DayClass(i);
+                    if (xclass!="")
+                    {
+                        for (var j = 0; j<cells.length; j++)
+                        {
+                            if (cells[j].innerText != "")
+                            {
+                                cells[j].classList.add(xclass);
+                            }
+                        };
+                    }
+
+                }
+
+
+                tbl.appendChild(thead);
+                tbl.appendChild(tbody);
+                block.appendChild (tbl);
+
+            }
+
+            function DayClass(dayOfWeek)
+            {
+                if (dayOfWeek%7==0) return "sun";
+                if (dayOfWeek%7==6) return "sat";
+                return "";
+            }
+
+            function AddMonthName(row, name)
+            {
+                var cell = document.createElement("TH");
+                cell.innerText = name;
+                row.appendChild(cell);
+            }
+
+            function FillUserPreferences()
+            {
+                UserPreferences.title = document.getElementById("uiTitleTemplate").value;
+                UserPreferences.notes = document.getElementById("uiNotesTemplate").value;
+            }
+
+            function DoGenerate()
+            {
+                var title = document.getElementById("uiTitle");
+                var now = new Date();
+                var year = now.getFullYear();
+                UserPreferences.year = year;
+                title.innerText = T(UserPreferences.title, UserPreferences);
+
+                var block = document.getElementById("uiCalendar");
+                MakeColYear(block, UserPreferences);
+
+                document.getElementById("uiNotes").innerText = UserPreferences.notes;
+
+            }
+
+
+            function OnLoad()
+            {
+                FillUserPreferences();
+                DoGenerate();
+            }
+            function OnGenerate()
+            {
+                FillUserPreferences();
+                DoGenerate();
+            }
+
+            function OnHideSetup()
+            {
+                var setup = document.getElementById("uiSetup");
+                setup.style.display = "none";
+            }
+            function OnShowSetup()
+            {
+                var setup = document.getElementById("uiSetup");
+                setup.style.display = "block";
+            }
+
+            function Log(str)
+            {
+                document.getElementById("uiLog").innerText += str + "\n";
+            }
+
+        </script>
+    </head>
+
+    <body onload="OnLoad()">
+        <main>
+            <code id="uiSetup">
+                    <h1>Setup</h1>
+                    <form>
+                    <label>Title for the calendar?</label>
+                    <input title="Title" id="uiTitleTemplate" type="text" value="[[year]]" />
+                    <br />
+                    <label>Note for the calendar?</label>
+                    <textarea title="Notes"  id="uiNotesTemplate" type="text" value="" rows="4" cols="80"  ></textarea>
+                    <br>
+                    <button type="button" onclick="OnGenerate()">Make Calendar</button>
+                    <button type="button" onclick="OnHideSetup()">Hide Setup</button>
+                    </form>
+            </code>
+            <h1 onclick="OnShowSetup()" id="uiTitle">Calendar</h1>
+            <div id="uiCalendar"></div>
+            <div id="uiNotes"></div>
+            <code id="uiLog"></code>
+        </main>
+    </body>
+</html>
