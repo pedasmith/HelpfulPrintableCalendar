@@ -1,0 +1,45 @@
+
+table, th, td {
+    border-collapse: collapse;
+    font-size: 8pt;
+    height: 18px;
+    empty-cells:hide;
+}
+th {
+    border: 1px solid black;
+    background-color: #04AA6D;
+    color: white;
+}
+td { 
+    width: 7.69%;
+}
+.blankCell  { 
+    background-color: white;
+}
+.calendarCell  { 
+    border: 1px solid black;
+    background-color: white;
+}
+.dayNameCell  { 
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    border-left: 1px solid black;
+    background-color: white;
+}
+.dayNameCell.sat { 
+    font-weight:700;
+}
+.dayNameCell.sun { 
+    font-weight:700;
+}
+.sat { 
+    border-top: 2px double black;
+    background-color: #CCCCCC;
+}
+.sun { 
+    border-bottom: 2px double black;
+    background-color: #CCCCCC;
+}
+
+
+
