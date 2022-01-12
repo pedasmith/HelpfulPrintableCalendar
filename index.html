@@ -55,38 +55,59 @@
         <script>
             var UserPreferences ={
                 title: "[[year]]",
-                calendarType: "colyear"
+                calendarType: "colyear",
+                nmonths: 16,
+                startingDate: new Date()
             };
             function T(input, prefs)
             {
-                var output=input.replace("[[year]]", prefs.year);
+                var output=input.replace("[[year]]", prefs.startingDate.getFullYear());
                 return output;
             }
 
             function MakeColYear(block, prefs)
             {
-                var year = prefs.year;
+                var year = prefs.startingDate.getFullYear();
+                var startMonth = prefs.startingDate.getMonth(); //0=jan 1=feb 2=mar etc.
+                var nmonths = prefs.nmonths;
+                if (nmonths === undefined) nmonths = 9;
+
                 block.innerHTML = "";
                 var tbl = document.createElement ("TABLE");
                 var thead = document.createElement ("THEAD");
                 var tbody = document.createElement ("TBODY");
 
-                var cal = new Date (year, 0, 1); //0==jan and 1==1st (of jan)
+                var cal = new Date (year, startMonth, 1); //0==jan and 1==1st (of jan)
                 var ms = cal.getTime();
                 var msPerDay = 24 * 60 * 60 * 1000;
 
                 var row = thead.insertRow();
                 var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dec"];
                 AddMonthName(row, "Day");
-                for (var i=0; i<12; i++)
+                for (var i=0; i<nmonths; i++)
                 {
-                    AddMonthName(row, monthNames[i]);
+                    AddMonthName(row, monthNames[(i+startMonth)%12]);
                 }
+
+                // Update the td width
+                var w=nmonths / 92.28;
+                var rule = "td {width:"+w+"% }";
+
+                style=document.createElement('style');
+                document.head.appendChild(style);
+                stylesheet=style.sheet;
+                try
+                { 
+                    stylesheet.insertRule(rule, stylesheet.cssRules.length); 
+                }
+                catch(err){}
 
                 // Add all of the days
                 var oldM = -1;
+                var nnewmonth = 0;
                 var firstDayOffset = 0;
-                while (cal.getFullYear()==year)
+                var c=0;
+                while (1) // cal.getFullYear()==year)
                 {
                     var m = cal.getMonth();
                     var d = cal.getDate();
@@ -95,9 +116,25 @@
                     if (newMonth)
                     {
                         firstDayOffset = dayOfWeek;
+                        nnewmonth += 1;
+                        c=c+1;
+                        oldM=m;
+                        if (nnewmonth > nmonths)
+                        {
+                            break;
+                        }
+
                     }
                     var r = d + firstDayOffset - 1; 
-                    var c = m + 1; // month + name of day
+                    //var c = m + 1 -startMonth; // month + name of day
+                    //if (nnewmonth > 12)
+                    //{
+                    //    c+=12;
+                    //}
+                    var debug=c<0
+
+                    if(debug) console.log ("DBG: day: m="+m+" d="+d+" c="+c+" r="+r);
+
                     while (tbody.rows.length <= r)
                     {
                         tbody.insertRow();
@@ -106,8 +143,11 @@
                     while (dayrow.cells.length < c)
                     {
                         var isFirst = dayrow.cells.length == 0;
+                        var cellClass=isFirst ? "dayNameCell": "blankCell";
+                        if(debug) console.log("DBG: insert len="+dayrow.cells.length+" c="+c+" classname="+blank.className);
+
                         var blank = dayrow.insertCell();
-                        blank.className= isFirst ? "dayNameCell": "blankCell";
+                        blank.className= cellClass;
                         blank.innerText = "";
                     }
                     var cell = dayrow.insertCell();
@@ -115,7 +155,6 @@
                     cell.className = "calendarCell";
 
                     // Bottom of loop.
-                    oldM = m;
                     cal.setTime(cal.getTime() + msPerDay);
                 }
 
@@ -125,6 +164,12 @@
                 {
                     var day = dayOfWeek[i%dayOfWeek.length];
                     var cells = tbody.rows[i].cells
+                    if (cells.length == 0) 
+                    {
+                        // Making a calendar where none of the months starts on sunday.
+                        // In that case, the cells will be an array of length 0
+                        tbody.rows[i].insertCell();
+                    }
                     cells[0].innerText = day;
 
                     // If it's Sat or Sun, mark all cells in the row
@@ -167,14 +212,13 @@
             {
                 UserPreferences.title = document.getElementById("uiTitleTemplate").value;
                 UserPreferences.notes = document.getElementById("uiNotesTemplate").value;
+                UserPreferences.nmonths = document.getElementById("uiNMonths").value;
+                UserPreferences.startingDate = new Date(document.getElementById("uiDateStart").value);
             }
 
             function DoGenerate()
             {
                 var title = document.getElementById("uiTitle");
-                var now = new Date();
-                var year = now.getFullYear();
-                UserPreferences.year = year;
                 title.innerText = T(UserPreferences.title, UserPreferences);
 
                 var block = document.getElementById("uiCalendar");
@@ -187,6 +231,7 @@
 
             function OnLoad()
             {
+                document.getElementById("uiDateStart").value = "2022-01-02";
                 FillUserPreferences();
                 DoGenerate();
             }
@@ -223,8 +268,11 @@
                     <label>Title for the calendar?</label>
                     <input title="Title" id="uiTitleTemplate" type="text" value="[[year]]" />
                     <br />
-                    <label>Note for the calendar?</label>
+                    <label>Notes for the calendar?</label>
                     <textarea title="Notes"  id="uiNotesTemplate" type="text" value="" rows="4" cols="80"  ></textarea>
+                    <br>
+                    Starting date: <input type="date" id="uiDateStart" title="Starting Date" />
+                    Number of months: <input type="number" id="uiNMonths" value="12" title="Number of months" />
                     <br>
                     <button type="button" onclick="OnGenerate()">Make Calendar</button>
                     <button type="button" onclick="OnHideSetup()">Hide Setup</button>
